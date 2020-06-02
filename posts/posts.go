@@ -13,11 +13,14 @@ const (
 	defaultTimeout = 10 * time.Second
 )
 
+// Posts bundles all function to access external json endpoint
 type Posts struct {
 	endpoint   string
 	httpClient *http.Client
 }
 
+// New returns a new initialized Posts struct for given
+// endpoint
 func New(endpoint string) *Posts {
 	return &Posts{
 		endpoint: endpoint,
@@ -27,11 +30,14 @@ func New(endpoint string) *Posts {
 	}
 }
 
+// NewWithSEA returns a new initialized Posts struct pointing
+// to SEA json server endpoint
 func NewWithSEA() *Posts {
 	return New(seaEndpoint)
 }
 
-func (p *Posts) loadPosts() ([]RemotePost, error) {
+// LoadPosts loads all existing posts from external endpoint
+func (p *Posts) LoadPosts() ([]RemotePost, error) {
 	var remotePosts []RemotePost
 	var err error
 

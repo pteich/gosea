@@ -8,12 +8,15 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/pteich/gosea/api"
+	"github.com/pteich/gosea/posts"
 	"github.com/pteich/gosea/status"
 )
 
 func main() {
 	var err error
 
+	// initialize logger
 	logfile, err := os.Create("messages.log")
 	if err != nil {
 		log.Fatalf("error opening log file: %s", err.Error())
@@ -22,15 +25,20 @@ func main() {
 		log.Print("closing log file")
 		logfile.Close()
 	}()
-
 	logger := log.New(os.Stdout, "gosea ", log.LstdFlags)
 
+	// init signal handling
 	sigChan := make(chan os.Signal)
 	defer close(sigChan)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
+	// create services
+	postsService := posts.NewWithSEA()
+	apiService := api.New(postsService)
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", status.Health)
+	mux.HandleFunc("/api", apiService.Posts)
 
 	srv := &http.Server{
 		Addr:    ":8000",
