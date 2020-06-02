@@ -8,6 +8,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/go-chi/chi"
+
 	"github.com/pteich/gosea/api"
 	"github.com/pteich/gosea/posts"
 	"github.com/pteich/gosea/status"
@@ -36,13 +38,13 @@ func main() {
 	postsService := posts.NewWithSEA()
 	apiService := api.New(postsService)
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/health", status.Health)
-	mux.HandleFunc("/api", apiService.Posts)
+	chiRouter := chi.NewRouter()
+	chiRouter.Get("/health", status.Health)
+	chiRouter.Get("/api", apiService.Posts)
 
 	srv := &http.Server{
 		Addr:    ":8000",
-		Handler: mux,
+		Handler: chiRouter,
 	}
 
 	go func() {
