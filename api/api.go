@@ -26,6 +26,11 @@ func New(posts postsService) *Api {
 func (a *Api) Posts(w http.ResponseWriter, r *http.Request) {
 	var err error
 
+	if r.Method != http.MethodGet {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+
 	remotePosts, err := a.posts.LoadPosts()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
