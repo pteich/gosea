@@ -1,0 +1,14 @@
+FROM golang:1.14 as builder
+
+WORKDIR /workspace
+COPY . /workspace
+
+RUN make build-linux
+
+FROM scratch
+
+COPY --from=builder /workspace/build/linux-amd64/gosea /gosea
+
+EXPOSE 8000
+
+ENTRYPOINT ["/gosea"]

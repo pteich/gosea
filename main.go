@@ -13,18 +13,22 @@ import (
 	"github.com/pteich/gosea/status"
 )
 
-func main() {
-	var err error
+var Version = "latest"
 
-	// initialize logger
-	logfile, err := os.Create("messages.log")
-	if err != nil {
-		log.Fatalf("error opening log file: %s", err.Error())
-	}
-	defer func() {
-		log.Print("closing log file")
-		logfile.Close()
-	}()
+func main() {
+	/*
+		var err error
+
+		// initialize logger
+		logfile, err := os.Create("/tmp/messages.log")
+		if err != nil {
+			log.Fatalf("error opening log file: %s", err.Error())
+		}
+		defer func() {
+			log.Print("closing log file")
+			logfile.Close()
+		}()
+	*/
 	logger := log.New(os.Stdout, "gosea ", log.LstdFlags)
 
 	// init signal handling
@@ -34,7 +38,7 @@ func main() {
 
 	// create services
 	postsService := posts.NewWithSEA()
-	apiService := api.New(postsService)
+	apiService := api.New(postsService, logger)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", status.Health)
@@ -52,7 +56,7 @@ func main() {
 		}
 	}()
 
-	logger.Print("starting service")
+	logger.Printf("starting gosea %s", Version)
 
 	<-sigChan
 

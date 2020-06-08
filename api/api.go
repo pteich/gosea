@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strings"
 
@@ -13,18 +14,22 @@ type postsService interface {
 }
 
 type Api struct {
-	posts postsService
+	posts  postsService
+	logger *log.Logger
 }
 
-func New(posts postsService) *Api {
+func New(posts postsService, logger *log.Logger) *Api {
 	return &Api{
-		posts: posts,
+		posts:  posts,
+		logger: logger,
 	}
 }
 
 // Posts returns a json response with remote posts
 func (a *Api) Posts(w http.ResponseWriter, r *http.Request) {
 	var err error
+
+	a.logger.Printf("got request %s %s", r.Method, r.URL.Path)
 
 	if r.Method != http.MethodGet {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
@@ -41,7 +46,7 @@ func (a *Api) Posts(w http.ResponseWriter, r *http.Request) {
 
 	responsePosts := make([]Post, 0)
 	for _, remotePost := range remotePosts {
-		if !strings.Contains(strings.ToLower(remotePost.Title), strings.ToLower(filter)) {
+		if filter != "" && !strings.Contains(strings.ToLower(remotePost.Title), strings.ToLower(filter)) {
 			continue
 		}
 
@@ -53,7 +58,8 @@ func (a *Api) Posts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("content-type", "application/json")
-	err = json.NewEncoder(w).Encode(responsePosts)
+	enc := json.NewEncoder(w)
+	err = enc.Encode(responsePosts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

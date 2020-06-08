@@ -40,12 +40,10 @@ func NewWithSEA() *Posts {
 func (p *Posts) LoadPosts() ([]RemotePost, error) {
 	var remotePosts []RemotePost
 	var err error
-
 	req, err := http.NewRequest(http.MethodGet, p.endpoint+"/posts", nil)
 	if err != nil {
 		return remotePosts, fmt.Errorf("failed to create request: %w", err)
 	}
-
 	req.Header.Set("accept-encoding", "application/json")
 
 	res, err := p.httpClient.Do(req)

@@ -1,0 +1,9 @@
+version: '3'
+
+services:
+  gosea:
+    build:
+      dockerfile: ./Dockerfile
+      context: .
+    ports:
+    - 8000:8000
