@@ -52,7 +52,7 @@ func (p *Posts) LoadPosts() ([]RemotePost, error) {
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode >= http.StatusBadRequest {
+	if res.StatusCode >= 400 {
 		return remotePosts, fmt.Errorf("remote server returned status %d", res.StatusCode)
 	}
 
