@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -10,7 +11,7 @@ import (
 )
 
 type postsService interface {
-	LoadPosts() ([]posts.RemotePost, error)
+	LoadPosts(ctx context.Context) ([]posts.RemotePost, error)
 }
 
 type Api struct {
@@ -36,7 +37,9 @@ func (a *Api) Posts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	remotePosts, err := a.posts.LoadPosts()
+	ctxValue := context.WithValue(r.Context(), "id", 1)
+
+	remotePosts, err := a.posts.LoadPosts(ctxValue)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

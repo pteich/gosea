@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -18,7 +19,7 @@ type postsMock struct {
 	err         error
 }
 
-func (pm *postsMock) LoadPosts() ([]posts.RemotePost, error) {
+func (pm *postsMock) LoadPosts(ctx context.Context) ([]posts.RemotePost, error) {
 	return pm.remotePosts, pm.err
 }
 

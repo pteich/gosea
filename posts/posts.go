@@ -1,6 +1,7 @@
 package posts
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -37,10 +38,14 @@ func NewWithSEA() *Posts {
 }
 
 // LoadPosts loads all existing posts from external endpoint
-func (p *Posts) LoadPosts() ([]RemotePost, error) {
+func (p *Posts) LoadPosts(ctx context.Context) ([]RemotePost, error) {
 	var remotePosts []RemotePost
 	var err error
-	req, err := http.NewRequest(http.MethodGet, p.endpoint+"/posts", nil)
+
+	ctxTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctxTimeout, http.MethodGet, p.endpoint+"/posts", nil)
 	if err != nil {
 		return remotePosts, fmt.Errorf("failed to create request: %w", err)
 	}
