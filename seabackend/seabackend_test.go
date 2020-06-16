@@ -1,6 +1,7 @@
-package posts
+package seabackend
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -89,7 +90,7 @@ func TestPosts_LoadPosts(t *testing.T) {
 			}))
 			defer testSrv.Close()
 
-			testPosts := &Posts{
+			testPosts := &SeaBackend{
 				endpoint:   testSrv.URL,
 				httpClient: testSrv.Client(),
 			}
@@ -98,7 +99,7 @@ func TestPosts_LoadPosts(t *testing.T) {
 				testPosts.endpoint = ""
 			}
 
-			rp, err := testPosts.LoadPosts()
+			rp, err := testPosts.LoadPosts(context.TODO())
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -108,4 +109,15 @@ func TestPosts_LoadPosts(t *testing.T) {
 			assert.Equal(t, tt.wantResponse, rp)
 		})
 	}
+}
+
+func TestSeaBackend_LoadUsers(t *testing.T) {
+
+	sb := NewWithSEA()
+
+	users, err := sb.LoadUsers(context.TODO())
+	assert.NoError(t, err)
+
+	t.Log(users)
+
 }

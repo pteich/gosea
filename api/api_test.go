@@ -11,15 +11,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/pteich/gosea/posts"
+	"github.com/pteich/gosea/seabackend"
 )
 
 type postsMock struct {
-	remotePosts []posts.RemotePost
+	remotePosts []seabackend.RemotePost
 	err         error
 }
 
-func (pm *postsMock) LoadPosts(ctx context.Context) ([]posts.RemotePost, error) {
+func (pm *postsMock) LoadPosts(ctx context.Context) ([]seabackend.RemotePost, error) {
 	return pm.remotePosts, pm.err
 }
 
@@ -28,7 +28,7 @@ func TestApi_Posts(t *testing.T) {
 
 	testApi := &Api{
 		posts: &postsMock{
-			remotePosts: []posts.RemotePost{
+			remotePosts: []seabackend.RemotePost{
 				{
 					UserID: json.Number("1"),
 					ID:     json.Number("1"),

@@ -5,13 +5,12 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"strings"
 
-	"github.com/pteich/gosea/posts"
+	"github.com/pteich/gosea/seabackend"
 )
 
 type postsService interface {
-	LoadPosts(ctx context.Context) ([]posts.RemotePost, error)
+	LoadPosts(ctx context.Context) ([]seabackend.RemotePost, error)
 }
 
 type Api struct {
@@ -26,7 +25,7 @@ func New(posts postsService, logger *log.Logger) *Api {
 	}
 }
 
-// Posts returns a json response with remote posts
+// SeaBackend returns a json response with remote posts
 func (a *Api) Posts(w http.ResponseWriter, r *http.Request) {
 	var err error
 
@@ -49,7 +48,7 @@ func (a *Api) Posts(w http.ResponseWriter, r *http.Request) {
 
 	responsePosts := make([]Post, 0)
 	for _, remotePost := range remotePosts {
-		if filter != "" && !strings.Contains(strings.ToLower(remotePost.Title), strings.ToLower(filter)) {
+		if !remotePost.Contains(filter, seabackend.FieldAll) {
 			continue
 		}
 

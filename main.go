@@ -10,7 +10,7 @@ import (
 	"syscall"
 
 	"github.com/pteich/gosea/api"
-	"github.com/pteich/gosea/posts"
+	"github.com/pteich/gosea/seabackend"
 	"github.com/pteich/gosea/status"
 )
 
@@ -44,7 +44,7 @@ func main() {
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	// create services
-	postsService := posts.NewWithSEA()
+	postsService := seabackend.NewWithSEA()
 	apiService := api.New(postsService, logger)
 
 	mux := http.NewServeMux()
