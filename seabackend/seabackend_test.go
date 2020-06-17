@@ -86,7 +86,8 @@ func TestPosts_LoadPosts(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			testSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(tt.status)
-				fmt.Fprint(w, tt.jsonResponse)
+				_, err := fmt.Fprint(w, tt.jsonResponse)
+				assert.NoError(t, err)
 			}))
 			defer testSrv.Close()
 

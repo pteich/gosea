@@ -42,7 +42,6 @@ func (p *SeaBackend) LoadPosts(ctx context.Context) ([]RemotePost, error) {
 	var remotePosts []RemotePost
 
 	err := p.load(ctx, p.endpoint+"/posts", &remotePosts)
-
 	if err != nil {
 		return remotePosts, fmt.Errorf("could not load posts: %w", err)
 	}
@@ -53,7 +52,6 @@ func (p *SeaBackend) LoadPosts(ctx context.Context) ([]RemotePost, error) {
 // LoadUsers loads all existing users from external endpoint
 func (p *SeaBackend) LoadUsers(ctx context.Context) ([]RemoteUser, error) {
 	var remoteUsers []RemoteUser
-
 	err := p.load(ctx, p.endpoint+"/users", &remoteUsers)
 	if err != nil {
 		return remoteUsers, fmt.Errorf("could not load users: %w", err)
@@ -62,7 +60,26 @@ func (p *SeaBackend) LoadUsers(ctx context.Context) ([]RemoteUser, error) {
 	return remoteUsers, nil
 }
 
-func (p *SeaBackend) load(ctx context.Context, requestUrl string, data interface{}) error {
+// LoadUsers loads all existing users from external endpoint
+func (p *SeaBackend) LoadUser(ctx context.Context, id string) (RemoteUser, error) {
+	var remoteUsers []RemoteUser
+	var user RemoteUser
+
+	err := p.load(ctx, p.endpoint+"/users?id="+id, &remoteUsers)
+	if err != nil {
+		return user, fmt.Errorf("could not load user: %w", err)
+	}
+
+	if len(remoteUsers) <= 0 {
+		return user, fmt.Errorf("could not load user for id %s", id)
+	}
+
+	user = remoteUsers[0]
+
+	return user, nil
+}
+
+func (p *SeaBackend) load(ctx context.Context, requestUrl string, data interface{}) (err error) {
 	ctxTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
 
@@ -76,7 +93,9 @@ func (p *SeaBackend) load(ctx context.Context, requestUrl string, data interface
 	if err != nil {
 		return fmt.Errorf("failed execute request: %w", err)
 	}
-	defer res.Body.Close()
+	defer func() {
+		err = res.Body.Close()
+	}()
 
 	if res.StatusCode >= 400 {
 		return fmt.Errorf("remote server returned status %d", res.StatusCode)
@@ -84,6 +103,7 @@ func (p *SeaBackend) load(ctx context.Context, requestUrl string, data interface
 
 	respData, err := ioutil.ReadAll(res.Body)
 	if err != nil {
+
 		return fmt.Errorf("failed load body: %w", err)
 	}
 
