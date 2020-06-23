@@ -5,10 +5,13 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/pteich/gosea/seabackend"
 )
+
+const workerCount = 3
 
 type seaBackendService interface {
 	LoadPosts(ctx context.Context) ([]seabackend.RemotePost, error)
@@ -54,25 +57,55 @@ func (a *Api) Posts(w http.ResponseWriter, r *http.Request) {
 	filter := r.URL.Query().Get("filter")
 
 	responsePosts := make([]Post, 0)
+	remotePostsChan := make(chan seabackend.RemotePost)
+	responsePostsChan := make(chan Post)
+	loadUserFunc := func(workerId int, wg *sync.WaitGroup) {
+		wg.Add(1)
+		defer wg.Done()
+		for remotePost := range remotePostsChan {
+			user, err := a.seaBackend.LoadUser(ctxValue, remotePost.UserID.String())
+			if err != nil {
+				a.logger.Printf("could not load user %s", remotePost.UserID)
+				continue
+			}
+
+			post := Post{
+				Title:       remotePost.Title,
+				Body:        remotePost.Body,
+				Username:    user.Username,
+				CompanyName: user.Company.Name,
+			}
+
+			responsePostsChan <- post
+		}
+		a.logger.Printf("load user func %d stopped", workerId)
+	}
+
+	wg := &sync.WaitGroup{}
+	for i := 0; i < workerCount; i++ {
+		go loadUserFunc(i, wg)
+	}
+
+	responsePostEnded := make(chan struct{})
+	go func() {
+		for post := range responsePostsChan {
+			responsePosts = append(responsePosts, post)
+		}
+		responsePostEnded <- struct{}{}
+		a.logger.Print("append posts stopped")
+	}()
+
 	for _, remotePost := range remotePosts {
 		if !remotePost.Contains(filter, seabackend.FieldTitle) {
 			continue
 		}
-
-		user, err := a.seaBackend.LoadUser(ctxValue, remotePost.UserID.String())
-		if err != nil {
-			a.logger.Printf("could not load user %s", remotePost.UserID)
-			continue
-		}
-
-		post := Post{
-			Title:       remotePost.Title,
-			Body:        remotePost.Body,
-			Username:    user.Username,
-			CompanyName: user.Company.Name,
-		}
-		responsePosts = append(responsePosts, post)
+		remotePostsChan <- remotePost
 	}
+	close(remotePostsChan)
+
+	wg.Wait()
+	close(responsePostsChan)
+	<-responsePostEnded
 
 	w.Header().Set("content-type", "application/json")
 	enc := json.NewEncoder(w)
