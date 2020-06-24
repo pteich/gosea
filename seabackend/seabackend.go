@@ -10,13 +10,20 @@ import (
 )
 
 const (
-	seaEndpoint    = "http://sa-bonn.ddnss.de:3000"
-	defaultTimeout = 10 * time.Second
+	seaEndpoint     = "http://sa-bonn.ddnss.de:3000"
+	defaultTimeout  = 10 * time.Second
+	defaultCacheTTL = 10 * time.Second
 )
+
+type Cache interface {
+	Get(key string, data interface{}) error
+	Set(key string, data interface{}) error
+}
 
 // SeaBackend bundles all function to access external json endpoint
 type SeaBackend struct {
 	endpoint   string
+	cache      Cache
 	httpClient *http.Client
 }
 
@@ -25,6 +32,7 @@ type SeaBackend struct {
 func New(endpoint string) *SeaBackend {
 	return &SeaBackend{
 		endpoint: endpoint,
+		cache:    NewRequestCache(defaultCacheTTL),
 		httpClient: &http.Client{
 			Timeout: defaultTimeout,
 		},
@@ -83,6 +91,11 @@ func (p *SeaBackend) load(ctx context.Context, requestUrl string, data interface
 	ctxTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
 
+	err = p.cache.Get(requestUrl, data)
+	if err == nil {
+		return err
+	}
+
 	req, err := http.NewRequestWithContext(ctxTimeout, http.MethodGet, requestUrl, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
@@ -103,13 +116,17 @@ func (p *SeaBackend) load(ctx context.Context, requestUrl string, data interface
 
 	respData, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-
 		return fmt.Errorf("failed load body: %w", err)
 	}
 
 	err = json.Unmarshal(respData, data)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal body: %w", err)
+	}
+
+	err = p.cache.Set(requestUrl, data)
+	if err != nil {
+		return fmt.Errorf("failed to save data to cache: %w", err)
 	}
 
 	return nil
