@@ -1,4 +1,4 @@
-package api
+package seabackend
 
 type Post struct {
 	Username    string `json:"username"`

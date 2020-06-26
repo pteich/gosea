@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pteich/gosea/seabackend"
+	"github.com/pteich/gosea/src/seabackend"
 )
 
 const workerCount = 3
@@ -56,9 +56,9 @@ func (a *Api) Posts(w http.ResponseWriter, r *http.Request) {
 
 	filter := r.URL.Query().Get("filter")
 
-	responsePosts := make([]Post, 0)
+	responsePosts := make([]seabackend.Post, 0)
 	remotePostsChan := make(chan seabackend.RemotePost)
-	responsePostsChan := make(chan Post)
+	responsePostsChan := make(chan seabackend.Post)
 	loadUserFunc := func(workerId int, wg *sync.WaitGroup) {
 		wg.Add(1)
 		defer wg.Done()
@@ -69,7 +69,7 @@ func (a *Api) Posts(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			post := Post{
+			post := seabackend.Post{
 				Title:       remotePost.Title,
 				Body:        remotePost.Body,
 				Username:    user.Username,

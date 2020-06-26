@@ -32,6 +32,11 @@ func NewRequestCache(ttl time.Duration) *RequestCache {
 	}
 }
 
+func (rc *RequestCache) Inject() {
+	rc.maxTTL = 15 * time.Minute
+	rc.cache = make(map[string]cacheItem)
+}
+
 func (rc *RequestCache) Set(key string, data interface{}) error {
 	buf := &bytes.Buffer{}
 	enc := gob.NewEncoder(buf)

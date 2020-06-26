@@ -11,7 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/pteich/gosea/seabackend"
+	"github.com/pteich/gosea/src/seabackend"
 )
 
 type postsMock struct {
@@ -59,10 +59,10 @@ func TestApi_Posts(t *testing.T) {
 	assert.Equal(t, 200, w.Code)
 	assert.Equal(t, "application/json", w.Header().Get("content-type"))
 
-	var responsePosts []Post
+	var responsePosts []seabackend.Post
 	json.NewDecoder(w.Body).Decode(&responsePosts)
 
-	expected := []Post{
+	expected := []seabackend.Post{
 		{
 			Title: "Title1",
 			Body:  "Body1",

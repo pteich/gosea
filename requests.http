@@ -1,7 +1,7 @@
 GET http://localhost:8000/health
 
 ###
-GET http://localhost:8000/api
+GET http://localhost:3322/api
 
 ###
 POST http://localhost:8000/api

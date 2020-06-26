@@ -6,13 +6,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sync"
 	"time"
+
+	"flamingo.me/flamingo/v3/framework/web"
 )
 
 const (
 	seaEndpoint     = "http://sa-bonn.ddnss.de:3000"
 	defaultTimeout  = 10 * time.Second
 	defaultCacheTTL = 10 * time.Second
+	workerCount     = 3
 )
 
 type Cache interface {
@@ -22,6 +26,7 @@ type Cache interface {
 
 // SeaBackend bundles all function to access external json endpoint
 type SeaBackend struct {
+	responder  *web.Responder
 	endpoint   string
 	cache      Cache
 	httpClient *http.Client
@@ -45,11 +50,21 @@ func NewWithSEA() *SeaBackend {
 	return New(seaEndpoint)
 }
 
+func (sb *SeaBackend) Inject(responder *web.Responder, cache *RequestCache) *SeaBackend {
+	sb.responder = responder
+	sb.endpoint = seaEndpoint
+	sb.cache = cache
+	sb.httpClient = &http.Client{
+		Timeout: defaultTimeout,
+	}
+	return sb
+}
+
 // LoadPosts loads all existing posts from external endpoint
-func (p *SeaBackend) LoadPosts(ctx context.Context) ([]RemotePost, error) {
+func (sb *SeaBackend) LoadPosts(ctx context.Context) ([]RemotePost, error) {
 	var remotePosts []RemotePost
 
-	err := p.load(ctx, p.endpoint+"/posts", &remotePosts)
+	err := sb.load(ctx, sb.endpoint+"/posts", &remotePosts)
 	if err != nil {
 		return remotePosts, fmt.Errorf("could not load posts: %w", err)
 	}
@@ -58,9 +73,9 @@ func (p *SeaBackend) LoadPosts(ctx context.Context) ([]RemotePost, error) {
 }
 
 // LoadUsers loads all existing users from external endpoint
-func (p *SeaBackend) LoadUsers(ctx context.Context) ([]RemoteUser, error) {
+func (sb *SeaBackend) LoadUsers(ctx context.Context) ([]RemoteUser, error) {
 	var remoteUsers []RemoteUser
-	err := p.load(ctx, p.endpoint+"/users", &remoteUsers)
+	err := sb.load(ctx, sb.endpoint+"/users", &remoteUsers)
 	if err != nil {
 		return remoteUsers, fmt.Errorf("could not load users: %w", err)
 	}
@@ -69,11 +84,11 @@ func (p *SeaBackend) LoadUsers(ctx context.Context) ([]RemoteUser, error) {
 }
 
 // LoadUsers loads all existing users from external endpoint
-func (p *SeaBackend) LoadUser(ctx context.Context, id string) (RemoteUser, error) {
+func (sb *SeaBackend) LoadUser(ctx context.Context, id string) (RemoteUser, error) {
 	var remoteUsers []RemoteUser
 	var user RemoteUser
 
-	err := p.load(ctx, p.endpoint+"/users?id="+id, &remoteUsers)
+	err := sb.load(ctx, sb.endpoint+"/users?id="+id, &remoteUsers)
 	if err != nil {
 		return user, fmt.Errorf("could not load user: %w", err)
 	}
@@ -87,11 +102,11 @@ func (p *SeaBackend) LoadUser(ctx context.Context, id string) (RemoteUser, error
 	return user, nil
 }
 
-func (p *SeaBackend) load(ctx context.Context, requestUrl string, data interface{}) (err error) {
+func (sb *SeaBackend) load(ctx context.Context, requestUrl string, data interface{}) (err error) {
 	ctxTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
 
-	err = p.cache.Get(requestUrl, data)
+	err = sb.cache.Get(requestUrl, data)
 	if err == nil {
 		return err
 	}
@@ -102,7 +117,7 @@ func (p *SeaBackend) load(ctx context.Context, requestUrl string, data interface
 	}
 	req.Header.Set("accept-encoding", "application/json")
 
-	res, err := p.httpClient.Do(req)
+	res, err := sb.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed execute request: %w", err)
 	}
@@ -124,10 +139,71 @@ func (p *SeaBackend) load(ctx context.Context, requestUrl string, data interface
 		return fmt.Errorf("failed to unmarshal body: %w", err)
 	}
 
-	err = p.cache.Set(requestUrl, data)
+	err = sb.cache.Set(requestUrl, data)
 	if err != nil {
 		return fmt.Errorf("failed to save data to cache: %w", err)
 	}
 
 	return nil
+}
+
+func (sb *SeaBackend) Posts(ctx context.Context, req *web.Request) web.Result {
+	var err error
+
+	remotePosts, err := sb.LoadPosts(ctx)
+	if err != nil {
+		return sb.responder.ServerError(err)
+	}
+
+	filter, _ := req.Query1("filter")
+
+	responsePosts := make([]Post, 0)
+	remotePostsChan := make(chan RemotePost)
+	responsePostsChan := make(chan Post)
+	loadUserFunc := func(workerId int, wg *sync.WaitGroup) {
+		wg.Add(1)
+		defer wg.Done()
+		for remotePost := range remotePostsChan {
+			user, err := sb.LoadUser(ctx, remotePost.UserID.String())
+			if err != nil {
+				continue
+			}
+
+			post := Post{
+				Title:       remotePost.Title,
+				Body:        remotePost.Body,
+				Username:    user.Username,
+				CompanyName: user.Company.Name,
+			}
+
+			responsePostsChan <- post
+		}
+	}
+
+	wg := &sync.WaitGroup{}
+	for i := 0; i < workerCount; i++ {
+		go loadUserFunc(i, wg)
+	}
+
+	responsePostEnded := make(chan struct{})
+	go func() {
+		for post := range responsePostsChan {
+			responsePosts = append(responsePosts, post)
+		}
+		responsePostEnded <- struct{}{}
+	}()
+
+	for _, remotePost := range remotePosts {
+		if !remotePost.Contains(filter, FieldTitle) {
+			continue
+		}
+		remotePostsChan <- remotePost
+	}
+	close(remotePostsChan)
+
+	wg.Wait()
+	close(responsePostsChan)
+	<-responsePostEnded
+
+	return sb.responder.Data(responsePosts)
 }
