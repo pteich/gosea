@@ -3,6 +3,11 @@ package seabackend
 import (
 	"flamingo.me/dingo"
 	"flamingo.me/flamingo/v3/framework/web"
+
+	"github.com/pteich/gosea/src/seabackend/application"
+	"github.com/pteich/gosea/src/seabackend/domain/service"
+	"github.com/pteich/gosea/src/seabackend/infrastructure"
+	"github.com/pteich/gosea/src/seabackend/interfaces/controllers"
 )
 
 type Module struct {
@@ -10,19 +15,8 @@ type Module struct {
 
 func (m *Module) Configure(injector *dingo.Injector) {
 	web.BindRoutes(injector, new(routes))
-}
 
-type routes struct {
-	seaBackendController *SeaBackend
-}
-
-func (r *routes) Inject(controller *SeaBackend) *routes {
-	r.seaBackendController = controller
-	return r
-}
-
-func (r *routes) Routes(registry *web.RouterRegistry) {
-	registry.HandleGet("seaBackend.Posts", r.seaBackendController.Posts)
-	registry.MustRoute("/api", "seaBackend.Posts")
-	registry.MustRoute("/posts", "seaBackend.Posts")
+	injector.Bind(new(controllers.PostsWithUserLoader)).To(new(application.PostsWithUsers))
+	injector.Bind(new(service.SeaBackendLoader)).To(new(infrastructure.SeaBackend))
+	injector.Bind(new(infrastructure.Cacher)).To(new(infrastructure.RequestCache))
 }

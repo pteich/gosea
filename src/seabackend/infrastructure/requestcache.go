@@ -1,4 +1,4 @@
-package seabackend
+package infrastructure
 
 import (
 	"bytes"
@@ -32,8 +32,12 @@ func NewRequestCache(ttl time.Duration) *RequestCache {
 	}
 }
 
-func (rc *RequestCache) Inject() {
-	rc.maxTTL = 15 * time.Minute
+func (rc *RequestCache) Inject(cfg *struct {
+	DefaultTTL float64 `inject:"config:seabackend.defaultCacheTTL"`
+}) {
+	if cfg != nil {
+		rc.maxTTL = time.Duration(cfg.DefaultTTL) * time.Second
+	}
 	rc.cache = make(map[string]cacheItem)
 }
 

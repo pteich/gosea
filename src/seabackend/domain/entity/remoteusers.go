@@ -1,4 +1,4 @@
-package seabackend
+package entity
 
 type RemoteCompany struct {
 	ID          int    `json:"-"`

@@ -1,4 +1,4 @@
-package seabackend
+package infrastructure
 
 import (
 	"context"
@@ -9,6 +9,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/pteich/gosea/src/seabackend/domain/entity"
 )
 
 func TestPosts_LoadPosts(t *testing.T) {
@@ -18,14 +20,14 @@ func TestPosts_LoadPosts(t *testing.T) {
 		status        int
 		wrongEndpoint bool
 		wantErr       bool
-		wantResponse  []RemotePost
+		wantResponse  []entity.RemotePost
 	}{
 		{
 			name:         "Normaler Response mit mehreren Werten",
 			jsonResponse: `[{"userId": 1, "id":1, "title": "Title1", "body": "Body1"},{"userId": 2, "id":2, "title": "Title2", "body": "Body2"}]`,
 			status:       http.StatusOK,
 			wantErr:      false,
-			wantResponse: []RemotePost{
+			wantResponse: []entity.RemotePost{
 				{
 					UserID: json.Number("1"),
 					ID:     json.Number("1"),
@@ -52,7 +54,7 @@ func TestPosts_LoadPosts(t *testing.T) {
 			jsonResponse: `[{"userId": "1", "id":"1", "title": "Title1", "body": "Body1"},{"userId": 2, "id":2, "title": "Title2", "body": "Body2"}]`,
 			wantErr:      false,
 			status:       http.StatusOK,
-			wantResponse: []RemotePost{
+			wantResponse: []entity.RemotePost{
 				{
 					UserID: json.Number("1"),
 					ID:     json.Number("1"),

@@ -1,4 +1,4 @@
-package seabackend
+package entity
 
 import (
 	"encoding/json"
