@@ -86,7 +86,7 @@ func (sb *SeaBackend) load(ctx context.Context, requestUrl string, data interfac
 
 	err = sb.cache.Get(requestUrl, data)
 	if err == nil {
-		return err
+		return nil
 	}
 
 	req, err := http.NewRequestWithContext(ctxTimeout, http.MethodGet, requestUrl, nil)
@@ -100,7 +100,10 @@ func (sb *SeaBackend) load(ctx context.Context, requestUrl string, data interfac
 		return fmt.Errorf("failed execute request: %w", err)
 	}
 	defer func() {
-		err = res.Body.Close()
+		bodyClosErr := res.Body.Close()
+		if bodyClosErr != nil {
+			err = bodyClosErr
+		}
 	}()
 
 	if res.StatusCode >= 400 {

@@ -3,15 +3,30 @@ package infrastructure
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 
 	"github.com/pteich/gosea/src/seabackend/domain/entity"
+	"github.com/pteich/gosea/src/seabackend/infrastructure/mocks"
 )
+
+// manual mocking Cacher interface
+type CacheMock struct {
+}
+
+func (cm *CacheMock) Get(key string, data interface{}) error {
+	return errors.New("not found")
+}
+
+func (cm *CacheMock) Set(key string, data interface{}) error {
+	return nil
+}
 
 func TestPosts_LoadPosts(t *testing.T) {
 	tests := []struct {
@@ -19,6 +34,7 @@ func TestPosts_LoadPosts(t *testing.T) {
 		jsonResponse  string
 		status        int
 		wrongEndpoint bool
+		cacheGetErr   error
 		wantErr       bool
 		wantResponse  []entity.RemotePost
 	}{
@@ -27,6 +43,7 @@ func TestPosts_LoadPosts(t *testing.T) {
 			jsonResponse: `[{"userId": 1, "id":1, "title": "Title1", "body": "Body1"},{"userId": 2, "id":2, "title": "Title2", "body": "Body2"}]`,
 			status:       http.StatusOK,
 			wantErr:      false,
+			cacheGetErr:  errors.New("not found"),
 			wantResponse: []entity.RemotePost{
 				{
 					UserID: json.Number("1"),
@@ -46,6 +63,7 @@ func TestPosts_LoadPosts(t *testing.T) {
 			name:         "Leerer Response",
 			jsonResponse: ``,
 			status:       http.StatusOK,
+			cacheGetErr:  errors.New("not found"),
 			wantErr:      true,
 			wantResponse: nil,
 		},
@@ -54,6 +72,7 @@ func TestPosts_LoadPosts(t *testing.T) {
 			jsonResponse: `[{"userId": "1", "id":"1", "title": "Title1", "body": "Body1"},{"userId": 2, "id":2, "title": "Title2", "body": "Body2"}]`,
 			wantErr:      false,
 			status:       http.StatusOK,
+			cacheGetErr:  errors.New("not found"),
 			wantResponse: []entity.RemotePost{
 				{
 					UserID: json.Number("1"),
@@ -73,6 +92,7 @@ func TestPosts_LoadPosts(t *testing.T) {
 			name:         "Falscher Status",
 			jsonResponse: `[{"userId": "1", "id":"1", "title": "Title1", "body": "Body1"},{"userId": 2, "id":2, "title": "Title2", "body": "Body2"}]`,
 			status:       http.StatusInternalServerError,
+			cacheGetErr:  errors.New("not found"),
 			wantErr:      true,
 			wantResponse: nil,
 		},
@@ -81,6 +101,7 @@ func TestPosts_LoadPosts(t *testing.T) {
 			wrongEndpoint: true,
 			wantErr:       true,
 			wantResponse:  nil,
+			cacheGetErr:   errors.New("not found"),
 		},
 	}
 
@@ -93,10 +114,20 @@ func TestPosts_LoadPosts(t *testing.T) {
 			}))
 			defer testSrv.Close()
 
-			testPosts := &SeaBackend{
-				endpoint:   testSrv.URL,
-				httpClient: testSrv.Client(),
-			}
+			// manual mocking Cacher interface
+			// cacheMock := CacheMock{}
+			cacheMock := mocks.Cacher{}
+			cacheMock.On("Get", mock.Anything, mock.Anything).Return(tt.cacheGetErr).Once()
+			cacheMock.On("Set", mock.Anything, mock.Anything).Return(nil).Once()
+
+			testPosts := &SeaBackend{}
+			testPosts.Inject(&cacheMock, &struct {
+				Endpoint       string  `inject:"config:seabackend.endpoint"`
+				DefaultTimeout float64 `inject:"config:seabackend.defaultTimeout"`
+			}{
+				Endpoint:       testSrv.URL,
+				DefaultTimeout: 100,
+			})
 
 			if tt.wrongEndpoint {
 				testPosts.endpoint = ""
@@ -112,15 +143,4 @@ func TestPosts_LoadPosts(t *testing.T) {
 			assert.Equal(t, tt.wantResponse, rp)
 		})
 	}
-}
-
-func TestSeaBackend_LoadUsers(t *testing.T) {
-
-	sb := NewWithSEA()
-
-	users, err := sb.LoadUsers(context.TODO())
-	assert.NoError(t, err)
-
-	t.Log(users)
-
 }

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	"flamingo.me/flamingo/v3/framework/flamingo"
 	"flamingo.me/flamingo/v3/framework/web"
@@ -28,7 +29,7 @@ func (a *Api) Inject(postsWithUser PostsWithUserLoader, responder *web.Responder
 func (a *Api) ShowPostsWithUsers(ctx context.Context, req *web.Request) web.Result {
 	filter, _ := req.Query1("filter")
 
-	a.logger.Info("posts with filter " + filter)
+	a.logger.Info(fmt.Sprintf("posts with filter %s", filter))
 	responsePosts, err := a.postsWithUser.RetrievePostsWithUsersFromBackend(ctx, filter)
 	if err != nil {
 		a.logger.Error(err)

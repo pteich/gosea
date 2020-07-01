@@ -13,9 +13,12 @@ type PostsWithUsers struct {
 	workerCount int
 }
 
-func (p *PostsWithUsers) Inject(seaBackend service.SeaBackendLoader, cfg *struct {
-	WorkerCount float64 `inject:"config:api.workerCount"`
-}) {
+func (p *PostsWithUsers) Inject(
+	seaBackend service.SeaBackendLoader,
+	cfg *struct {
+		WorkerCount float64 `inject:"config:api.workerCount"`
+	},
+) {
 	p.seaBackend = seaBackend
 	p.workerCount = int(cfg.WorkerCount)
 }
