@@ -1,5 +1,7 @@
 package infrastructure
 
+//go:generate mockery --all
+
 import (
 	"context"
 	"encoding/json"

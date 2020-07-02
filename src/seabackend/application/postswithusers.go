@@ -8,6 +8,10 @@ import (
 	"github.com/pteich/gosea/src/seabackend/domain/service"
 )
 
+type postsWithUsersCfg struct {
+	WorkerCount float64 `inject:"config:api.workerCount"`
+}
+
 type PostsWithUsers struct {
 	seaBackend  service.SeaBackendLoader
 	workerCount int
@@ -15,9 +19,7 @@ type PostsWithUsers struct {
 
 func (p *PostsWithUsers) Inject(
 	seaBackend service.SeaBackendLoader,
-	cfg *struct {
-		WorkerCount float64 `inject:"config:api.workerCount"`
-	},
+	cfg *postsWithUsersCfg,
 ) {
 	p.seaBackend = seaBackend
 	p.workerCount = int(cfg.WorkerCount)

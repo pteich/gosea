@@ -1,5 +1,7 @@
 package service
 
+//go:generate mockery --all
+
 import (
 	"context"
 
