@@ -79,7 +79,7 @@ func TestPostsWithUsers_RetrievePostsWithUsersFromBackend(t *testing.T) {
 				seaBackendMock.On("LoadUser", mock.Anything, mock.Anything).Return(tc.remoteUser, nil)
 			}
 			for _, posts := range tc.remotePosts {
-				seaBackendMock.On("LoadUser", mock.Anything, posts.UserID).Return(tc.remoteUser, nil)
+				seaBackendMock.On("LoadUser", mock.Anything, posts.UserID.String()).Return(tc.remoteUser, nil)
 			}
 
 			// emulate Dingo dependency injection
