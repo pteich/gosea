@@ -8,15 +8,19 @@ import (
 	"flamingo.me/flamingo/v3/core/zap"
 
 	"github.com/pteich/gosea/src/seabackend"
+	"github.com/pteich/gosea/src/seaswagger"
 )
 
 var Version = "latest"
 
 func main() {
+
 	flamingo.App([]dingo.Module{
 		new(zap.Module),
 		new(requestlogger.Module),
 		new(healthcheck.Module),
 		new(seabackend.Module),
+		new(seaswagger.Module),
 	})
+
 }

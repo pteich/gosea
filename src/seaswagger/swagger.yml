@@ -1,0 +1,33 @@
+consumes:
+- application/json
+info:
+  description: gosea - SEA Go Sample Application
+  title: gosea
+  version: 1.0.0
+paths:
+  /posts:
+    get:
+      responses:
+        200:
+          description: lists posts
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/post"
+definitions:
+  post:
+    type: object
+    properties:
+      userId:
+        type: integer
+      id:
+        type: integer
+      title:
+        type: string
+      body:
+        type: string
+produces:
+- application/json
+schemes:
+- http
+swagger: "2.0"
