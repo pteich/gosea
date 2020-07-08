@@ -1,4 +1,5 @@
 seabackend.endpoint: "http://sa-bonn.ddnss.de:3000"
+seabackend.host: "sa-bonn.ddnss.de:3000"
 seabackend.defaultTimeout: 10
 seabackend.defaultCacheTTL: 600
 api.workerCount: 3

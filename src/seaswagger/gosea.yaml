@@ -22,6 +22,12 @@ paths:
               $ref: '#/definitions/post'
   /users:
     get:
+      parameters:
+      - name: id
+        description: UserID
+        in: query
+        required: false
+        type: integer
       responses:
         "200":
           description: Lists users
@@ -56,9 +62,9 @@ definitions:
     type: object
     properties:
       userId:
-        type: integer
+        type: object
       id:
-        type: integer
+        type: object
       title:
         type: string
       body:
@@ -69,8 +75,7 @@ definitions:
     type: object
     properties:
       id:
-        format: int32
-        type: integer
+        type: object
       name:
         type: string
       username:
@@ -78,7 +83,7 @@ definitions:
       email:
         type: string
       address:
-        type: object
+        $ref: '#/definitions/address'
         properties:
           street:
             type: string
@@ -100,7 +105,7 @@ definitions:
       website:
         type: string
       company:
-        type: object
+        $ref: '#/definitions/company'
         properties:
           name:
             type: string
@@ -127,3 +132,58 @@ definitions:
         name: Romaguera-Crona
         catchPhrase: Multi-layered client-server neural-net
         bs: harness real-time e-markets
+  address:
+    title: Root Type for address
+    description: User Adress
+    type: object
+    properties:
+      street:
+        type: string
+      suite:
+        type: string
+      city:
+        type: string
+      zipcode:
+        type: string
+      geo:
+        $ref: '#/definitions/geo'
+        properties:
+          lat:
+            type: string
+          lng:
+            type: string
+    example:
+      street: Kulas Light
+      suite: Apt. 556
+      city: Gwenborough
+      zipcode: 92998-3874
+      geo:
+        lat: -37.3159
+        lng: "81.1496"
+  company:
+    title: Root Type for company
+    description: User Company
+    type: object
+    properties:
+      name:
+        type: string
+      catchPhrase:
+        type: string
+      bs:
+        type: string
+    example:
+      name: Romaguera-Crona
+      catchPhrase: Multi-layered client-server neural-net
+      bs: harness real-time e-markets
+  geo:
+    title: Root Type for geo
+    description: Geodata
+    type: object
+    properties:
+      lat:
+        type: string
+      lng:
+        type: string
+    example:
+      lat: -37.3159
+      lng: "81.1496"
